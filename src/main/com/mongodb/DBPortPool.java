@@ -242,21 +242,25 @@ public class DBPortPool extends SimplePool<DBPort> {
         // force close all sockets
 
         List<DBPort> all = new ArrayList<DBPort>();
-        while ( true ){
-            try {
-                DBPort temp = get(0, false);
-                if ( temp == null )
-                    break;
-                all.add( temp );
-            } catch (InterruptedException interruptedException) {
+        try {
+            while ( true ){
+
+                    DBPort temp = get(0, false);
+                    if ( temp == null )
+                        break;
+                    all.add( temp );
+
+            }
+        } catch (InterruptedException interruptedException) {
                 throw new MongoInterruptedException(interruptedException);
+        } finally {
+            for ( DBPort p : all ) {
+                p.close();
+                done(p);
             }
         }
 
-        for ( DBPort p : all ){
-            p.close();
-            done(p);
-        }
+
 
         return false;
     }

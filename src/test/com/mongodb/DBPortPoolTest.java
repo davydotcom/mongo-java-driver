@@ -2,13 +2,13 @@
 
 /**
  *      Copyright (C) 2008 10gen Inc.
- *  
+ *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  *   Unless required by applicable law or agreed to in writing, software
  *   distributed under the License is distributed on an "AS IS" BASIS,
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -75,13 +75,13 @@ public class DBPortPoolTest extends com.mongodb.util.TestCase {
                 }
             });
         }
-        
+
         ready.await();
         start.countDown();
         done.await();
         es.shutdown();
         es.awaitTermination( Integer.MAX_VALUE, TimeUnit.SECONDS);
-        
+
         assertEquals( pool.getMaxSize() , pool.getAvailable() );
     }
 
@@ -123,6 +123,23 @@ public class DBPortPoolTest extends com.mongodb.util.TestCase {
             e.printStackTrace();
             fail("Should not happen");
         }
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void testMakingTooManyConnections() throws Exception {
+        MongoOptions options = new MongoOptions();
+        options.connectionsPerHost = 10;
+        final DBPortPool pool = new DBPortPool( new ServerAddress( "localhost" ), options );
+
+        // ensure that maximum number of connections are created
+        DBPort[] ports = new DBPort[11];
+        for (int x = 0; x < options.connectionsPerHost + 1; x++) {
+            ports[x] = pool.get(0);
+        }
+
+        assertEquals( pool.getMaxSize() , pool.getTotal() );
+
     }
 
     public static void main( String args[] ){
