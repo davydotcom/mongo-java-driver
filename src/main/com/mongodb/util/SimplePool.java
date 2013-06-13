@@ -66,27 +66,20 @@ public abstract class SimplePool<T> {
      * @param t Object to add
      */
     public void done( T t ){
-        try {
-            synchronized ( this ) {
-                if (_closed) {
-                    cleanup(t);
-                    return;
-                }
 
-
-
-                if (!_out.remove(t)) {
-                    throw new RuntimeException("trying to put something back in the pool wasn't checked out");
-                }
-
-                _avail.add(t);
-
+        synchronized ( this ) {
+            if (_closed) {
+                cleanup(t);
+                return;
             }
-        catch(Throwable t) {
-            throw t;
-        } finally {
-            _sem.release();
+
+            if (!_out.remove(t)) {
+                throw new RuntimeException("trying to put something back in the pool wasn't checked out");
+            }
+            _avail.add(t);
         }
+        _sem.release();
+
     }
 
     private void assertConditions() {
@@ -111,7 +104,21 @@ public abstract class SimplePool<T> {
      *        positive ms to wait
      * @return An object from the pool, or null if can't get one in the given waitTime
      */
-    public T get(long waitTime, boolean allowCreate=true) throws InterruptedException {
+    public T get(long waitTime) throws InterruptedException {
+        return get(waitTime, true);
+    }
+
+    /** Gets an object from the pool - will block if none are available
+     * @param waitTime
+     *        negative - forever
+     *        0        - return immediately no matter what
+     *        positive ms to wait
+     * @param allowCreate
+     *        true - allow creation of new connection if none available
+     *        false - skip creation if none available
+     * @return An object from the pool, or null if can't get one in the given waitTime
+     */
+    public T get(long waitTime, boolean allowCreate) throws InterruptedException {
         if (!permitAcquired(waitTime)) {
             return null;
         }
@@ -120,13 +127,16 @@ public abstract class SimplePool<T> {
             assertConditions();
 
             int toTake = pick(_avail.size() - 1, getTotal() < getMaxSize());
-            T t;
+            T t = null;
             if (toTake >= 0) {
                 t = _avail.remove(toTake);
             } else if(allowCreate && getTotal() < getMaxSize()){
                 t = createNewAndReleasePermitIfFailure();
             }
-            _out.add(t);
+            if(t != null) {
+                _out.add(t);
+            }
+
 
             return t;
         }
