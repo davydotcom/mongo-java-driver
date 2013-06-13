@@ -244,12 +244,10 @@ public class DBPortPool extends SimplePool<DBPort> {
         List<DBPort> all = new ArrayList<DBPort>();
         try {
             while ( true ){
-
                     DBPort temp = get(0, false);
                     if ( temp == null )
                         break;
                     all.add( temp );
-
             }
         } catch (InterruptedException interruptedException) {
                 throw new MongoInterruptedException(interruptedException);
