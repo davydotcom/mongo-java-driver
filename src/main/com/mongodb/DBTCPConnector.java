@@ -293,7 +293,7 @@ public class DBTCPConnector implements DBConnector {
      * Gets the list of server addresses currently seen by the connector.
      * This includes addresses auto-discovered from a replica set.
      * @return
-     * @throws MongoException 
+     * @throws MongoException
      */
     public List<ServerAddress> getServerAddressList() {
         if (_connectionStatus != null) {
@@ -406,10 +406,10 @@ public class DBTCPConnector implements DBConnector {
             else {
                 ReplicaSetStatus.ReplicaSet replicaSet = getReplicaSetStatus()._replicaSetHolder.get();
                 ConnectionStatus.Node node = readPref.getNode(replicaSet);
-            
+
                 if (node == null)
                     throw new MongoException("No replica set members available in " +  replicaSet + " for " + readPref.toDBObject().toString());
-            
+
                 port = _portHolder.get(node.getServerAddress()).get();
             }
 
@@ -426,6 +426,9 @@ public class DBTCPConnector implements DBConnector {
 
             // keep request port
             if (port != requestPort) {
+                port.getPool().done(port);
+            } else {
+                getPinnedRequestStatusForThread().requestPort = null;
                 port.getPool().done(port);
             }
         }
