@@ -475,9 +475,12 @@ public class DBTCPConnector implements DBConnector {
         void done( DBPort port ) {
             Connection requestPort = getPinnedRequestPortForThread();
 
-            // keep request port
+            // keep request port - moding this to return it to prevent a leak in grails mongo datasource
             if (port != requestPort) {
                 port.getProvider().release(port);
+            } else if (port == requestPort) {
+                port.getProvider().release(port);
+                setPinnedRequestPortForThread(null);
             }
         }
 
